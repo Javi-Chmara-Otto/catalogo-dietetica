@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo Dietética</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f2ec; color: #222; }
+  input, select, textarea {
+    font-family: inherit; font-size: 14px;
+    border: 1px solid #ddd; border-radius: 8px;
+    padding: 9px 12px; background: #fff; color: #222;
+    outline: none; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #2d5016; }
+  button { font-family: inherit; cursor: pointer; }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 16px;
+  }
+  .modal {
+    background: #fff; border-radius: 14px; width: 100%;
+    max-width: 440px; padding: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  tr:hover td { background: #f0ede6 !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const CATEGORIES = ["Semillas","Harinas","Especias","Coco & Aceites","Frutos Secos","Pasta de Maní","Yerba","Varios"];
+
+const CAT_STYLE = {
+  "Semillas":       { bg:"#EAF3DE", color:"#27500A" },
+  "Harinas":        { bg:"#FAEEDA", color:"#854F0B" },
+  "Especias":       { bg:"#FAECE7", color:"#993C1D" },
+  "Coco & Aceites": { bg:"#E1F5EE", color:"#0F6E56" },
+  "Frutos Secos":   { bg:"#EEEDFE", color:"#3C3489" },
+  "Pasta de Maní":  { bg:"#FBEAF0", color:"#72243E" },
+  "Yerba":          { bg:"#D3F9D8", color:"#1a5c20" },
+  "Varios":         { bg:"#F1EFE8", color:"#444441" },
+};
+
+const DATA = [
+  {id:1,  nombre:"Semillas de Lino",                               categoria:"Semillas",       precio:4500,  notas:""},
+  {id:2,  nombre:"Semillas de Chía",                               categoria:"Semillas",       precio:8500,  notas:""},
+  {id:3,  nombre:"Mix de Semillas",                                categoria:"Semillas",       precio:6500,  notas:""},
+  {id:4,  nombre:"Semillas de Quinoa",                             categoria:"Semillas",       precio:11500, notas:""},
+  {id:5,  nombre:"Semillas de Sésamo Blanco",                      categoria:"Semillas",       precio:8500,  notas:""},
+  {id:6,  nombre:"Semillas Sésamo Integral",                       categoria:"Semillas",       precio:5000,  notas:""},
+  {id:7,  nombre:"Semillas de Zapallo Importado x 500gr",          categoria:"Semillas",       precio:9900,  notas:""},
+  {id:8,  nombre:"Semillas de Cous Cous x 500gr",                  categoria:"Semillas",       precio:6700,  notas:""},
+  {id:9,  nombre:"Semillas de Fenogreco",                          categoria:"Semillas",       precio:10800, notas:""},
+  {id:10, nombre:"Harina de Almendras s/piel",                     categoria:"Harinas",        precio:7500,  notas:""},
+  {id:11, nombre:"Harina Algarroba",                               categoria:"Harinas",        precio:6800,  notas:""},
+  {id:12, nombre:"Harina Quinoa",                                  categoria:"Harinas",        precio:7600,  notas:""},
+  {id:13, nombre:"Harina de Coco Importada",                       categoria:"Harinas",        precio:6600,  notas:""},
+  {id:14, nombre:"Harina Centeno",                                 categoria:"Harinas",        precio:3800,  notas:""},
+  {id:15, nombre:"Harina Arroz",                                   categoria:"Harinas",        precio:3500,  notas:""},
+  {id:16, nombre:"Harina Avena",                                   categoria:"Harinas",        precio:4300,  notas:""},
+  {id:17, nombre:"Harina Garbanzos",                               categoria:"Harinas",        precio:3500,  notas:""},
+  {id:18, nombre:"Harina Integral",                                categoria:"Harinas",        precio:3500,  notas:""},
+  {id:19, nombre:"Fariña de Mandioca",                             categoria:"Harinas",        precio:5800,  notas:""},
+  {id:20, nombre:"Fécula de Mandioca",                             categoria:"Harinas",        precio:4200,  notas:""},
+  {id:21, nombre:"Fécula de Maíz",                                 categoria:"Harinas",        precio:3900,  notas:""},
+  {id:22, nombre:"Avena Arrollada",                                categoria:"Harinas",        precio:3900,  notas:""},
+  {id:23, nombre:"Especias Surtidas x 1kg",                        categoria:"Especias",       precio:8500,  notas:"Ají Molido, Ajo en Polvo, Cebolla en Polvo, Chimichurri, Cúrcuma, Orégano, Provenzal, Pimentón..."},
+  {id:24, nombre:"Especias Premium x 1kg",                         categoria:"Especias",       precio:12500, notas:"Ajo Granulado, Jengibre, Nuez Moscada, Pimienta Blanca, Pimienta Negra"},
+  {id:25, nombre:"Hongos Secos de Pino x 500gr",                   categoria:"Especias",       precio:17500, notas:""},
+  {id:26, nombre:"Finas Hierbas x 500gr",                          categoria:"Especias",       precio:10500, notas:""},
+  {id:27, nombre:"Coco Rallado",                                   categoria:"Coco & Aceites", precio:10500, notas:""},
+  {id:28, nombre:"Coco en Escama x 500gr",                         categoria:"Coco & Aceites", precio:17300, notas:""},
+  {id:29, nombre:"Leche en Polvo de Coco x 500gr",                 categoria:"Coco & Aceites", precio:13200, notas:""},
+  {id:30, nombre:"Azúcar de Coco",                                 categoria:"Coco & Aceites", precio:15300, notas:""},
+  {id:31, nombre:"Aceite de Coco Neutro x 360cc",                  categoria:"Coco & Aceites", precio:7900,  notas:"Entrenuts Sin TACC"},
+  {id:32, nombre:"Aceite de Coco Neutro x 500cc",                  categoria:"Coco & Aceites", precio:10500, notas:"Entrenuts Sin TACC"},
+  {id:33, nombre:"Aceite de Coco Virgen x 360cc",                  categoria:"Coco & Aceites", precio:13500, notas:"Entrenuts Sin TACC"},
+  {id:34, nombre:"Aceite de Coco Virgen x 500cc",                  categoria:"Coco & Aceites", precio:16800, notas:"Entrenuts Sin TACC"},
+  {id:35, nombre:"Ghee Manteca Clarificada x 300gr",               categoria:"Coco & Aceites", precio:11800, notas:"Entrenuts Sin TACC"},
+  {id:36, nombre:"Aceite de Oliva Extra Virgen Prensado x 500ml",  categoria:"Coco & Aceites", precio:16500, notas:"Areco — Prensado en frío"},
+  {id:37, nombre:"Aceite de Oliva Extra Virgen x 500ml",           categoria:"Coco & Aceites", precio:12500, notas:"Areco"},
+  {id:38, nombre:"Aceite de Oliva Grisari x 1000ml",               categoria:"Coco & Aceites", precio:9000,  notas:""},
+  {id:39, nombre:"Vinagre de Sidra de Manzana Orgánico x 250ml",   categoria:"Coco & Aceites", precio:7900,  notas:"Pampagoumet"},
+  {id:40, nombre:"Vinagre de Sidra de Manzana Orgánico x 500ml",   categoria:"Coco & Aceites", precio:13000, notas:"Pampagoumet"},
+  {id:41, nombre:"Vinagre de Vino Orgánico x 250ml (Malbec)",      categoria:"Coco & Aceites", precio:7900,  notas:""},
+  {id:42, nombre:"Vinagre de Arroz x 250ml",                       categoria:"Coco & Aceites", precio:7500,  notas:""},
+  {id:43, nombre:"Azúcar Mascabo",                                 categoria:"Varios",         precio:5500,  notas:""},
+  {id:44, nombre:"Cacao Amargo",                                   categoria:"Varios",         precio:13700, notas:""},
+  {id:45, nombre:"Gelatina sin Sabor x 500gr",                     categoria:"Varios",         precio:15600, notas:""},
+  {id:46, nombre:"Hibisco x 500gr (Flor de Jamaica)",              categoria:"Varios",         precio:11900, notas:""},
+  {id:47, nombre:"Agua de Mar x 5 litros",                         categoria:"Varios",         precio:14500, notas:"Pramar"},
+  {id:48, nombre:"Maka Roja x 500gr",                              categoria:"Varios",         precio:4000,  notas:""},
+  {id:49, nombre:"Maka Negra x 500gr",                             categoria:"Varios",         precio:4000,  notas:""},
+  {id:50, nombre:"Maka Blanca",                                    categoria:"Varios",         precio:4000,  notas:""},
+  {id:51, nombre:"Arroz Yamani Integral",                          categoria:"Varios",         precio:4200,  notas:""},
+  {id:52, nombre:"Arroz Integral",                                 categoria:"Varios",         precio:3500,  notas:""},
+  {id:53, nombre:"Lentejas Nacionales",                            categoria:"Varios",         precio:4500,  notas:""},
+  {id:54, nombre:"Garbanzos Nacionales",                           categoria:"Varios",         precio:3400,  notas:""},
+  {id:55, nombre:"Sal Marina Fina x 500gr",                        categoria:"Varios",         precio:3900,  notas:""},
+  {id:56, nombre:"Sal Marina Entrefina x 500gr",                   categoria:"Varios",         precio:3900,  notas:""},
+  {id:57, nombre:"Sal de Himalaya",                                categoria:"Varios",         precio:4000,  notas:""},
+  {id:58, nombre:"Avena Instantánea x 300gr",                      categoria:"Varios",         precio:3500,  notas:"Ganofi Sin TACC"},
+  {id:59, nombre:"Mermeladas c/Estevia x 400gr",                   categoria:"Varios",         precio:5500,  notas:"Ganofi Sin TACC — Higo, Naranja, Arándanos, Frutilla, Durazno"},
+  {id:60, nombre:"Dulce de Leche c/Estevia x 400gr",              categoria:"Varios",         precio:6500,  notas:"Ganofi Sin TACC"},
+  {id:61, nombre:"Polvo de Hornear",                               categoria:"Varios",         precio:7300,  notas:"Ganofi Sin TACC"},
+  {id:62, nombre:"Bicarbonato",                                    categoria:"Varios",         precio:4300,  notas:"Ganofi Sin TACC"},
+  {id:63, nombre:"Miel Pura 100% Natural x 500gr",                 categoria:"Varios",         precio:6000,  notas:"Sin Agregado de Azúcar"},
+  {id:64, nombre:"Yerba Orgánica Ajedrez Molida",                  categoria:"Yerba",          precio:6000,  notas:""},
+  {id:65, nombre:"Yerba Orgánica Ajedrez c/Hojas",                 categoria:"Yerba",          precio:6000,  notas:""},
+  {id:66, nombre:"Yerba Orgánica Ajedrez c/Palo",                  categoria:"Yerba",          precio:6000,  notas:""},
+  {id:67, nombre:"Pasta de Maní x 3.5kg",                         categoria:"Pasta de Maní",  precio:19000, notas:"Sin TACC"},
+  {id:68, nombre:"Pasta de Maní x 370gr",                         categoria:"Pasta de Maní",  precio:5200,  notas:"Sin TACC"},
+  {id:69, nombre:"Pasta de Maní de Coco x 370gr",                 categoria:"Pasta de Maní",  precio:5200,  notas:"Sin TACC"},
+  {id:70, nombre:"Pasta de Maní Chocolate x 370gr",               categoria:"Pasta de Maní",  precio:5200,  notas:"Sin TACC"},
+  {id:71, nombre:"Mix Cereales Azucarados",                        categoria:"Frutos Secos",   precio:9500,  notas:""},
+  {id:72, nombre:"Mix Cereales Naturales",                         categoria:"Frutos Secos",   precio:9500,  notas:""},
+  {id:73, nombre:"Mix Cervecero",                                  categoria:"Frutos Secos",   precio:10500, notas:""},
+  {id:74, nombre:"Mix Europeo c/Maní",                             categoria:"Frutos Secos",   precio:20000, notas:""},
+  {id:75, nombre:"Mix Europeo s/Maní",                             categoria:"Frutos Secos",   precio:20000, notas:""},
+  {id:76, nombre:"Mix Frutos Secos s/Maní s/Pasas",               categoria:"Frutos Secos",   precio:26500, notas:""},
+  {id:77, nombre:"Mix Frutos Secos s/Maní",                        categoria:"Frutos Secos",   precio:24000, notas:""},
+  {id:78, nombre:"Mix Tropical c/Maní",                            categoria:"Frutos Secos",   precio:18000, notas:""},
+  {id:79, nombre:"Mix Tropical s/Maní",                            categoria:"Frutos Secos",   precio:16000, notas:""},
+  {id:80, nombre:"Nuez c/Cáscara",                                 categoria:"Frutos Secos",   precio:10700, notas:""},
+  {id:81, nombre:"Nuez Cuarto",                                    categoria:"Frutos Secos",   precio:24000, notas:""},
+  {id:82, nombre:"Nuez Mariposa",                                  categoria:"Frutos Secos",   precio:26500, notas:""},
+  {id:83, nombre:"Castañas de Cajú x 500gr",                       categoria:"Frutos Secos",   precio:10500, notas:""},
+  {id:84, nombre:"Almendras Guara",                                categoria:"Frutos Secos",   precio:26500, notas:""},
+  {id:85, nombre:"Arándanos Rojos en Pasas x 500gr",              categoria:"Frutos Secos",   precio:9500,  notas:""},
+  {id:86, nombre:"Ciruela Presidente s/carozo",                    categoria:"Frutos Secos",   precio:15200, notas:""},
+  {id:87, nombre:"Ciruela Agen",                                   categoria:"Frutos Secos",   precio:12500, notas:""},
+  {id:88, nombre:"Higos Negros",                                   categoria:"Frutos Secos",   precio:12500, notas:""},
+  {id:89, nombre:"Pasas Jumbo s/Semillas",                         categoria:"Frutos Secos",   precio:7500,  notas:""},
+  {id:90, nombre:"Dátiles s/carozo",                              categoria:"Frutos Secos",   precio:11500, notas:""},
+  {id:91, nombre:"Dátiles c/Carozo",                              categoria:"Frutos Secos",   precio:9500,  notas:""},
+];
+
+const KEY = "dietetica-v1";
+const fmt = n => "$ " + Number(n).toLocaleString("es-AR");
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(KEY);
+    return saved ? JSON.parse(saved) : DATA;
+  } catch { return DATA; }
+}
+function saveData(products) {
+  try { localStorage.setItem(KEY, JSON.stringify(products)); } catch {}
+}
+
+function CatBadge({ cat }) {
+  const s = CAT_STYLE[cat] || { bg:"#eee", color:"#555" };
+  return (
+    <span style={{
+      background:s.bg, color:s.color,
+      fontSize:11, fontWeight:600,
+      padding:"2px 9px", borderRadius:20, whiteSpace:"nowrap"
+    }}>{cat}</span>
+  );
+}
+
+function Modal({ product, onSave, onClose }) {
+  const [form, setForm] = useState(
+    product ? { ...product } : { nombre:"", categoria:"Semillas", precio:"", notas:"" }
+  );
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const valid = form.nombre.trim() && Number(form.precio) > 0;
+
+  return (
+    <div className="overlay">
+      <div className="modal">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <span style={{ fontSize:16, fontWeight:700 }}>
+            {product ? "✏️ Editar producto" : "➕ Nuevo producto"}
+          </span>
+          <button onClick={onClose} style={{
+            background:"#f3f3f3", border:"none", borderRadius:8,
+            width:32, height:32, fontSize:18, cursor:"pointer"
+          }}>✕</button>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          <div>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:4 }}>Nombre</label>
+            <input value={form.nombre} onChange={e => set("nombre", e.target.value)} placeholder="Ej: Semillas de Chía" />
+          </div>
+          <div>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:4 }}>Categoría</label>
+            <select value={form.categoria} onChange={e => set("categoria", e.target.value)}>
+              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:4 }}>Precio ($)</label>
+            <input type="number" value={form.precio} onChange={e => set("precio", e.target.value)} placeholder="Ej: 8500" />
+          </div>
+          <div>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:4 }}>Notas (opcional)</label>
+            <textarea value={form.notas} onChange={e => set("notas", e.target.value)}
+              placeholder="Marca, presentación, observaciones..." rows={2}
+              style={{ resize:"vertical" }} />
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:8, marginTop:18, justifyContent:"flex-end" }}>
+          <button onClick={onClose} style={{
+            padding:"8px 16px", borderRadius:8,
+            border:"1px solid #ddd", background:"#fff", fontSize:13
+          }}>Cancelar</button>
+          <button disabled={!valid} onClick={() => onSave({ ...form, precio: Number(form.precio) })}
+            style={{
+              padding:"8px 18px", borderRadius:8, border:"none",
+              background: valid ? "#2d5016" : "#bbb",
+              color:"#fff", fontSize:13, fontWeight:600,
+              cursor: valid ? "pointer" : "default"
+            }}>
+            {product ? "Guardar cambios" : "Agregar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [products, setProducts] = useState(loadData);
+  const [search, setSearch]     = useState("");
+  const [cat, setCat]           = useState("Todas");
+  const [sortBy, setSortBy]     = useState("nombre");
+  const [modal, setModal]       = useState(null);
+  const [deleting, setDeleting] = useState(null);
+
+  useEffect(() => saveData(products), [products]);
+
+  const filtered = products
+    .filter(p => {
+      const ms = (p.nombre + " " + p.notas).toLowerCase().includes(search.toLowerCase());
+      const mc = cat === "Todas" || p.categoria === cat;
+      return ms && mc;
+    })
+    .sort((a, b) => sortBy === "precio"
+      ? a.precio - b.precio
+      : a.nombre.localeCompare(b.nombre, "es")
+    );
+
+  function save(p) {
+    if (p.id) {
+      setProducts(prev => prev.map(x => x.id === p.id ? p : x));
+    } else {
+      setProducts(prev => [...prev, { ...p, id: Date.now() }]);
+    }
+    setModal(null);
+  }
+
+  function del(id) {
+    setProducts(prev => prev.filter(x => x.id !== id));
+    setDeleting(null);
+  }
+
+  const avg = Math.round(products.reduce((a, p) => a + p.precio, 0) / products.length);
+  const cats = new Set(products.map(p => p.categoria)).size;
+
+  return (
+    <div style={{ maxWidth:820, margin:"0 auto", padding:"24px 16px" }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:22, flexWrap:"wrap", gap:12 }}>
+        <div>
+          <h1 style={{ fontSize:22, fontWeight:800, color:"#1a3a08", margin:0 }}>🌿 Catálogo Dietética</h1>
+          <p style={{ fontSize:12, color:"#999", marginTop:4 }}>Lista de precios — uso interno</p>
+        </div>
+        <button onClick={() => setModal({})} style={{
+          background:"#2d5016", color:"#fff", border:"none",
+          borderRadius:10, padding:"10px 18px",
+          fontWeight:700, fontSize:13, cursor:"pointer"
+        }}>＋ Agregar producto</button>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:22 }}>
+        {[
+          { label:"Productos totales", val: products.length },
+          { label:"Categorías",        val: cats },
+          { label:"Precio promedio",   val: fmt(avg) },
+        ].map(s => (
+          <div key={s.label} style={{ background:"#ede9e0", borderRadius:10, padding:"12px 16px" }}>
+            <div style={{ fontSize:11, color:"#999", marginBottom:2 }}>{s.label}</div>
+            <div style={{ fontSize:20, fontWeight:800, color:"#2d5016" }}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Buscar + Ordenar */}
+      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="🔍  Buscar producto o marca..."
+          style={{ flex:1, minWidth:180 }}
+        />
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+          style={{ width:"auto", minWidth:140 }}>
+          <option value="nombre">Ordenar: A → Z</option>
+          <option value="precio">Ordenar: precio ↑</option>
+        </select>
+      </div>
+
+      {/* Filtros de categoría */}
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
+        {["Todas", ...CATEGORIES].map(c => {
+          const active = cat === c;
+          const s = CAT_STYLE[c];
+          return (
+            <button key={c} onClick={() => setCat(c)} style={{
+              padding:"4px 13px", borderRadius:20, fontSize:12,
+              fontWeight: active ? 700 : 400,
+              background: active ? (s ? s.bg : "#2d5016") : "#fff",
+              color:       active ? (s ? s.color : "#fff") : "#888",
+              border: `1px solid ${active ? (s ? s.color : "#2d5016") : "#ddd"}`,
+              cursor:"pointer", transition:"all .12s"
+            }}>{c}</button>
+          );
+        })}
+      </div>
+
+      {/* Contador */}
+      <div style={{ fontSize:12, color:"#bbb", marginBottom:10 }}>
+        {filtered.length} {filtered.length === 1 ? "producto" : "productos"}
+        {cat !== "Todas" ? ` en ${cat}` : ""}
+        {search ? ` · búsqueda: "${search}"` : ""}
+      </div>
+
+      {/* Tabla */}
+      <div style={{ border:"1px solid #e5e0d8", borderRadius:12, overflow:"hidden", background:"#fff" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"fixed" }}>
+          <thead>
+            <tr style={{ background:"#f0ede6" }}>
+              <th style={{ textAlign:"left",  padding:"10px 16px", fontSize:11, fontWeight:700, color:"#aaa", width:"44%" }}>PRODUCTO</th>
+              <th style={{ textAlign:"left",  padding:"10px 8px",  fontSize:11, fontWeight:700, color:"#aaa", width:"24%" }}>CATEGORÍA</th>
+              <th style={{ textAlign:"right", padding:"10px 16px", fontSize:11, fontWeight:700, color:"#aaa", width:"20%" }}>PRECIO</th>
+              <th style={{ width:"12%" }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding:40, textAlign:"center", color:"#ccc", fontSize:14 }}>
+                  No se encontraron productos
+                </td>
+              </tr>
+            ) : filtered.map((p, i) => (
+              <tr key={p.id} style={{ borderTop:"1px solid #f0ede6", background: i%2===0 ? "#fff" : "#faf8f5" }}>
+                <td style={{ padding:"10px 16px" }}>
+                  <div style={{ fontSize:13, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {p.nombre}
+                  </div>
+                  {p.notas && (
+                    <div style={{ fontSize:11, color:"#bbb", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {p.notas}
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding:"10px 8px" }}><CatBadge cat={p.categoria} /></td>
+                <td style={{ padding:"10px 16px", textAlign:"right", fontSize:14, fontWeight:800, color:"#2d5016", whiteSpace:"nowrap" }}>
+                  {fmt(p.precio)}
+                </td>
+                <td style={{ padding:"10px 10px" }}>
+                  <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
+                    <button onClick={() => setModal(p)} title="Editar"
+                      style={{ background:"#f3f3f3", border:"none", borderRadius:7, padding:"5px 8px", cursor:"pointer", fontSize:14 }}>✏️</button>
+                    <button onClick={() => setDeleting(p)} title="Eliminar"
+                      style={{ background:"#fff0f0", border:"none", borderRadius:7, padding:"5px 8px", cursor:"pointer", fontSize:14 }}>🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal editar/agregar */}
+      {modal !== null && (
+        <Modal product={modal.id ? modal : null} onSave={save} onClose={() => setModal(null)} />
+      )}
+
+      {/* Confirmar eliminación */}
+      {deleting && (
+        <div className="overlay">
+          <div className="modal" style={{ maxWidth:360 }}>
+            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Eliminar producto</div>
+            <div style={{ fontSize:13, color:"#666", marginBottom:20 }}>
+              ¿Seguro que querés eliminar <strong>{deleting.nombre}</strong>?
+            </div>
+            <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+              <button onClick={() => setDeleting(null)} style={{
+                padding:"8px 16px", borderRadius:8,
+                border:"1px solid #ddd", background:"#fff", cursor:"pointer", fontSize:13
+              }}>Cancelar</button>
+              <button onClick={() => del(deleting.id)} style={{
+                padding:"8px 18px", borderRadius:8, border:"none",
+                background:"#A32D2D", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:600
+              }}>Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
